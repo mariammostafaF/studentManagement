@@ -8,7 +8,11 @@ export default {
       lg: "974px",
       xl: "1440px",
     },
-    extend: {},
+    extend: {
+      fontFamily: {
+        montserrat: ['Montserrat', 'sans-serif'],
+    },
   },
+},
   plugins: [],
 };

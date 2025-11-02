@@ -1,6 +1,24 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/logo.jpg";
+
+interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  age: number;
+  enrollmentDate: string;
+  image: string;
+  courses: string[];
+}
+
+interface DashboardStats {
+  totalStudents: number;
+  totalCourses: number;
+  averageAge: number;
+  totalEnrolments: number;
+}
 
 interface Teacher {
   name?: string;
@@ -11,16 +29,15 @@ interface Teacher {
   photo?: string;
 }
 
-export default function AddStudentPage() {
+export default function DashboardPage() {
   const { logout, token } = useAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [age, setAge] = useState<number | "">("");
-  const [image, setImage] = useState("");
-  const [courses, setCourses] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [stats, setStats] = useState<DashboardStats>({
+    totalStudents: 0,
+    totalCourses: 0,
+    averageAge: 0,
+    totalEnrolments: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [teacherLoading, setTeacherLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(() => 
@@ -43,6 +60,7 @@ export default function AddStudentPage() {
       
       setTeacherLoading(true);
       try {
+        // Try common API endpoints for user/teacher info
         const endpoints = [
           "/api/auth/me",
           "/api/user",
@@ -86,6 +104,63 @@ export default function AddStudentPage() {
     fetchTeacherInfo();
   }, [token]);
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!token) return;
+
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `https://student-management-backend-production-2b4a.up.railway.app/api/students`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.students) {
+          const students: Student[] = data.students;
+
+          // Calculate statistics
+          const totalStudents = students.length;
+          
+          // Get all unique courses
+          const allCourses = new Set<string>();
+          students.forEach((student) => {
+            student.courses?.forEach((course) => allCourses.add(course));
+          });
+          const totalCourses = allCourses.size;
+
+          // Calculate average age
+          const totalAge = students.reduce((sum, student) => sum + (student.age || 0), 0);
+          const averageAge = totalStudents > 0 ? Math.round((totalAge / totalStudents) * 10) / 10 : 0;
+
+          // Total enrolments (total number of course enrollments across all students)
+          const totalEnrolments = students.reduce(
+            (sum, student) => sum + (student.courses?.length || 0),
+            0
+          );
+
+          setStats({
+            totalStudents,
+            totalCourses,
+            averageAge,
+            totalEnrolments,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [token]);
+
   const getTeacherName = () => {
     if (teacher?.name) return teacher.name;
     if (teacher?.firstName || teacher?.lastName) {
@@ -99,50 +174,31 @@ export default function AddStudentPage() {
     return teacher?.image || teacher?.photo || "";
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const response = await fetch(
-        "https://student-management-backend-production-2b4a.up.railway.app/api/students",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            age: Number(age),
-            image,
-            courses: courses.split(",").map((c) => c.trim()),
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage("✅ Student added successfully!");
-        setFirstName("");
-        setLastName("");
-        setEmail("");
-        setAge("");
-        setImage("");
-        setCourses("");
-      } else {
-        setMessage(`❌ ${data.error || "Failed to add student"}`);
-      }
-    } catch (err) {
-      setMessage("❌ Network error");
-    }
-
-    setLoading(false);
-  };
+  const StatBox = ({
+    title,
+    value,
+    icon,
+    color,
+  }: {
+    title: string;
+    value: string | number;
+    icon: string | React.ReactNode;
+    color: string;
+  }) => (
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-gray-500 text-sm font-medium mb-2">{title}</p>
+          <p className={`text-3xl font-bold ${color}`}>
+            {loading ? "..." : value}
+          </p>
+        </div>
+        <div className={`${color} bg-opacity-10 p-4 rounded-full`}>
+          <span className="text-2xl">{icon}</span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -174,6 +230,7 @@ export default function AddStudentPage() {
                   alt="Teacher"
                   className="w-20 h-20 rounded-full object-cover mb-3 border-2 border-gray-200"
                   onError={(e) => {
+                    // Fallback if image fails to load
                     (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='40' fill='%23E5E7EB'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='24' fill='%239CA3AF'%3E?%3C/text%3E%3C/svg%3E";
                   }}
                 />
@@ -228,97 +285,85 @@ export default function AddStudentPage() {
             </li>
           </ul>
         </nav>
-        <div
-          onClick={() => {
-            logout();
-            window.location.hash = "login";
-          }}
-          className="flex items-center justify-center px-4 py-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity space-x-2"
-        >
-          <i className="fa-solid fa-right-from-bracket text-black text-xl"></i>
-          <span className="text-black font-medium">Logout</span>
-        </div>
+         <div
+                onClick={() => {
+                  logout();
+                  window.location.hash = "login";
+                }}
+                className="flex items-center justify-center px-4 py-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity space-x-2"
+              >
+                <i className="fa-solid fa-right-from-bracket text-black text-xl"></i>
+                <span className="text-black font-medium">Logout</span>
+              </div>
       </aside>
+      
 
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">Add New Student</h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block font-medium">First Name</label>
+        {/* Header with Back, Search, and Notification */}
+        <div className="flex items-center justify-between mb-6">
+          <i 
+            className="fa-solid fa-circle-chevron-left text-black text-xl cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              logout();
+              window.location.hash = "login";
+            }}
+            aria-label="Logout"
+          ></i>
+          
+          <div className="flex-1 max-w-md mx-4">
+            <div className="relative">
               <input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-                required
+                type="text"
+                placeholder="Search..."
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
             </div>
+          </div>
+          
+          <div className="relative">
+            <i 
+              className="fa-regular fa-bell text-black text-xl cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => {
+                // Notification functionality to be implemented
+              }}
+              aria-label="Notifications"
+            ></i>
+            {/* Notification badge */}
+            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+          </div>
+        </div>
 
-            <div>
-              <label className="block font-medium">Last Name</label>
-              <input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium">Age</label>
-              <input
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value ? Number(e.target.value) : "")}
-                className="border rounded px-3 py-2 w-full"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium">Profile Image URL</label>
-              <input
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium">Courses (comma separated)</label>
-              <input
-                value={courses}
-                onChange={(e) => setCourses(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-                placeholder="e.g. Math, English, Science"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-300"
-            >
-              {loading ? "Adding..." : "Add Student"}
-            </button>
-          </form>
-
-          {message && <p className="mt-4">{message}</p>}
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">Dashboard</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatBox
+            title="Total Students"
+            value={stats.totalStudents}
+            icon={<i className="fa-solid fa-graduation-cap"></i>}
+            color="text-blue-400"
+          />
+          <StatBox
+            title="Total Courses"
+            value={stats.totalCourses}
+            icon={<i className="fa-regular fa-bookmark"></i>}
+            color="text-pink-200"
+          />
+          <StatBox
+            title="Average Age"
+            value={stats.averageAge}
+            icon={<i className="fa-regular fa-calendar-days"></i>}
+            color="text-orange-400"
+          />
+          <StatBox
+            title="Enrolments"
+            value={stats.totalEnrolments}
+            icon={<i className="fa-regular fa-user"></i>}
+            color="text-orange-600"
+          />
         </div>
       </main>
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import bgImage from "../assets/login-bg.jpg";
+import logo from "../assets/logo.jpg"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -45,16 +46,30 @@ export default function LoginPage() {
     >
       <form
         onSubmit={handleLogin}
-        className="bg-white/80 backdrop-blur-md w-full max-w-sm sm:max-w-md md:max-w-lg p-8 rounded-2xl shadow-lg flex flex-col items-center"
+        className="bg-white backdrop-blur-md w-full max-w-sm sm:max-w-md md:max-w-lg p-8 rounded-2xl shadow-lg flex flex-col items-center"
       >
-        <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">
-          Teacher Login
+      <div className="flex items-center justify-center mb-6 space-x-3">
+        <img
+          src={logo}
+          alt="Logo"
+          className="w-10 h-10 object-contain"
+        />
+        <h2 className="font-montserrat text-4xl font-bold text-black">
+          Student Management
         </h2>
+      </div>
+
+
+        <h3 className="text-2xl text-black font-bold">SIGN IN</h3>
+
+        <h4 className="text-gray-500">Enter your credentials to access your account</h4>
+        <br></br>
+        <br></br>
 
         {error && <p className="text-red-500 mb-3 text-sm text-center">{error}</p>}
 
         <div className="w-full mb-4">
-          <label className="block mb-1 text-sm font-medium text-gray-700">
+          <label className="block mb-1 text-sm font-medium text-gray-500">
             Email
           </label>
           <input
@@ -68,7 +83,7 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full mb-6">
-          <label className="block mb-1 text-sm font-medium text-gray-700">
+          <label className="block mb-1 text-sm font-medium text-gray-500">
             Password
           </label>
           <input
@@ -83,10 +98,20 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 transition-colors text-white font-semibold px-6 py-2 rounded-md w-full shadow-md"
+          className="transition-colors text-white px-6 py-2 rounded-md w-full shadow-md"
+          style={{ backgroundColor: "#FEAF00" }}
         >
-          Sign In
+          SIGN IN
         </button>
+        <br></br>
+        <h4 className="text-gray-500">Forgot your password? <a href="#" style={{ color: "#FEAF00", textDecoration: "underline" }}>
+          Reset Password
+        </a>
+        </h4>
+
+
+
+
       </form>
     </div>
   );

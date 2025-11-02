@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import DashboardLayout from "./layouts/DashboardLayout";
 import StudentsPage from "./pages/StudentsPage";
 import LoginPage from "./pages/LoginPage";
 import AddStudentPage from "./pages/AddStudentPage";
+import DashboardPage from "./pages/DashboardPage";
+import StudentProfilePage from "./pages/StudentProfilePage";
 import { useAuth } from "./contexts/AuthContext";
 
 function App() {
@@ -12,7 +13,11 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace("#", "");
-      setPage(hash || "dashboard");
+      if (hash.startsWith("student/")) {
+        setPage("student-profile");
+      } else {
+        setPage(hash || "dashboard");
+      }
     };
     window.addEventListener("hashchange", handleHashChange);
     handleHashChange();
@@ -24,16 +29,12 @@ function App() {
   }
 
   return (
-    <DashboardLayout>
-      {page === "dashboard" && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Welcome!</h2>
-          <p>This is your student management dashboard.</p>
-        </div>
-      )}
+    <>
+      {page === "dashboard" && <DashboardPage />}
       {page === "students" && <StudentsPage />}
       {page === "add-student" && <AddStudentPage />}
-    </DashboardLayout>
+      {page === "student-profile" && <StudentProfilePage />}
+    </>
   );
 }
 
