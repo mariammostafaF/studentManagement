@@ -151,6 +151,38 @@ export default function StudentsPage() {
     fetchStudents();
   };
 
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (!confirm(`Are you sure you want to delete ${studentName}?`)) {
+      return;
+    }
+
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `https://student-management-backend-production-2b4a.up.railway.app/api/students/${studentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Remove student from list immediately for better UX
+        setStudents(students.filter((s) => s.id !== studentId));
+        alert("Student deleted successfully!");
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to delete student");
+      }
+    } catch (err) {
+      console.error("Failed to delete student:", err);
+      alert("Network error. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Left Sidebar */}
@@ -397,8 +429,6 @@ export default function StudentsPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={() => {
-                              // Edit functionality to be implemented
-                              console.log("Edit student:", student.id);
                               window.location.hash = `add-student?edit=${student.id}`;
                             }}
                             className="text-[#FEAF00] hover:text-[#FEAF00] transition-opacity hover:opacity-80 bg-transparent"
@@ -408,11 +438,7 @@ export default function StudentsPage() {
                           </button>
                           <button
                             onClick={() => {
-                              // Delete functionality to be implemented
-                              if (confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
-                                console.log("Delete student:", student.id);
-                                // TODO: Implement delete API call
-                              }
+                              handleDeleteStudent(student.id, `${student.firstName} ${student.lastName}`);
                             }}
                             className="text-[#FEAF00] hover:text-[#FEAF00] transition-opacity hover:opacity-80 bg-transparent"
                             aria-label="Delete student"

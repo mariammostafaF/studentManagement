@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/logo.jpg";
+import profileImg from "../assets/profileimg.png";
+import loginBg from "../assets/login-bg.jpg";
 
 interface Student {
   id: string;
@@ -14,6 +16,7 @@ interface Student {
   country?: string;
   phoneNumber?: string;
   phone?: string;
+  about?: string;
 }
 
 interface Teacher {
@@ -333,92 +336,127 @@ export default function StudentProfilePage() {
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Student Profile</h2>
-            
-            {/* Student Info Box */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-center mb-4">
-                {student.image ? (
-                  <img
-                    src={student.image}
-                    alt={`${student.firstName} ${student.lastName}`}
-                    className="w-20 h-20 rounded-full object-cover mr-4 border-2 border-gray-200"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      const parent = target.parentElement;
-                      if (parent && !parent.querySelector(".fallback-initials")) {
-                        const fallback = document.createElement("div");
-                        fallback.className = "fallback-initials w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mr-4 border-2 border-gray-300";
-                        fallback.textContent = `${student.firstName?.charAt(0) || ""}${student.lastName?.charAt(0) || ""}`.toUpperCase();
-                        parent.insertBefore(fallback, target);
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mr-4 border-2 border-gray-300">
-                    <span className="text-gray-600 font-semibold text-2xl">
-                      {`${student.firstName?.charAt(0) || ""}${student.lastName?.charAt(0) || ""}`.toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    {student.firstName} {student.lastName}
-                  </h3>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium mb-1">Email</p>
-                  <p className="text-gray-900">{student.email}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm font-medium mb-1">Country</p>
-                  <p className="text-gray-900">{student.country || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm font-medium mb-1">Phone Number</p>
-                  <p className="text-gray-900">{student.phoneNumber || student.phone || "N/A"}</p>
-                </div>
+            <div className="flex items-center mb-6">
+              {student.image ? (
+                <img
+                  src={student.image}
+                  alt={`${student.firstName} ${student.lastName}`}
+                  className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-gray-200"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = profileImg;
+                  }}
+                />
+              ) : (
+                <img
+                  src={profileImg}
+                  alt={`${student.firstName} ${student.lastName}`}
+                  className="w-16 h-16 rounded-full object-cover mr-4 border-2 border-gray-200"
+                />
+              )}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {student.firstName} {student.lastName}
+                </h2>
+                <p className="text-gray-600 text-sm">Student</p>
               </div>
             </div>
-
-            {/* Courses Box */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Courses</h3>
-              {student.courses && student.courses.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {student.courses.map((course, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                    >
-                      {course}
-                    </span>
-                  ))}
+            
+            {/* Upper Two Boxes - Side by Side Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Student Info Box with Background Image - 1/3 width */}
+              <div className="rounded-lg shadow-md p-6 text-white relative overflow-hidden" style={{ backgroundImage: `url(${loginBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#FEAF00]/80 to-[#FFA500]/80"></div>
+                <div className="relative z-10">
+                <div className="flex flex-col items-center mb-4">
+                  <p className="text-white/90 mb-2">Hi, I am</p>
+                  <h3 className="text-2xl font-bold text-white mb-4">
+                    {student.firstName} {student.lastName}
+                  </h3>
+                  <img
+                    src={profileImg}
+                    alt={`${student.firstName} ${student.lastName}`}
+                    className="w-48 h-48 rounded-lg object-cover mb-4 border-4 border-white/20 shadow-lg"
+                  />
+                  {student.about && (
+                    <p className="text-white/95 text-sm mb-4 text-center">
+                      {student.about}
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-gray-500">No courses enrolled</p>
-              )}
+                <div className="space-y-3 mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-center">
+                    <i className="fa-solid fa-flag text-white/90 mr-3"></i>
+                    <p className="text-white">{student.country || "N/A"}</p>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fa-solid fa-envelope text-white/90 mr-3"></i>
+                    <p className="text-white text-sm break-all">{student.email}</p>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fa-solid fa-phone text-white/90 mr-3"></i>
+                    <p className="text-white">{student.phoneNumber || student.phone || "N/A"}</p>
+                  </div>
+                </div>
+                </div>
+              </div>
+
+              {/* Courses Box - 2/3 width */}
+              <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">All Courses</h3>
+                {student.courses && student.courses.length > 0 ? (
+                  <div className="space-y-3">
+                    {student.courses.map((course, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <i className="fa-solid fa-book text-gray-600 text-xl"></i>
+                          </div>
+                          <div>
+                            <p className="text-gray-900 font-medium">{course}</p>
+                            <p className="text-gray-500 text-sm">Course brief details</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            console.log("Details for course:", course);
+                          }}
+                          className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded hover:bg-gray-700 transition-colors"
+                        >
+                          Details &gt;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No courses enrolled</p>
+                )}
+              </div>
             </div>
 
             {/* Stats Boxes */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <InfoBox
                 title="Age"
-                value={student.age || "N/A"}
+                value={typeof student.age === 'number' ? `${student.age} Years` : "N/A"}
                 icon={<i className="fa-solid fa-calendar-days"></i>}
               />
               <InfoBox
                 title="Total Courses"
-                value={student.courses?.length || 0}
+                value={`${student.courses?.length || 0} Courses`}
                 icon={<i className="fa-regular fa-bookmark"></i>}
               />
               <InfoBox
                 title="Enrollment Date"
                 value={student.enrollmentDate 
-                  ? new Date(student.enrollmentDate).toLocaleDateString()
+                  ? new Date(student.enrollmentDate).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })
                   : "N/A"}
                 icon={<i className="fa-solid fa-calendar"></i>}
               />
