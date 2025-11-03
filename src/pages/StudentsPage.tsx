@@ -30,6 +30,10 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("");
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [teacherLoading, setTeacherLoading] = useState(true);
+  const [page, setPage] = useState<number>(1);
+  const [limit] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalStudents, setTotalStudents] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(() => 
     window.location.hash.replace("#", "") || "dashboard"
   );
@@ -114,7 +118,11 @@ export default function StudentsPage() {
     setError("");
     try {
       const response = await fetch(
-        `https://student-management-backend-production-2b4a.up.railway.app/api/students${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+        `https://student-management-backend-production-2b4a.up.railway.app/api/students?${new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+          ...(search ? { search } : {}),
+        }).toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -126,13 +134,25 @@ export default function StudentsPage() {
 
       if (response.ok && data.students) {
         setStudents(data.students);
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages ?? 1);
+          setTotalStudents(data.pagination.totalStudents ?? data.students.length ?? 0);
+        } else {
+          // Fallback if backend doesn't return pagination
+          setTotalPages(1);
+          setTotalStudents(data.students.length ?? 0);
+        }
       } else {
         setError(data.error || "Failed to fetch students");
         setStudents([]);
+        setTotalPages(1);
+        setTotalStudents(0);
       }
     } catch (err) {
       setError("Network error");
       setStudents([]);
+      setTotalPages(1);
+      setTotalStudents(0);
     } finally {
       setLoading(false);
     }
@@ -140,7 +160,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchStudents();
-  }, [token]);
+  }, [token, page]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -148,6 +168,8 @@ export default function StudentsPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Reset to first page when searching
+    setPage(1);
     fetchStudents();
   };
 
@@ -451,6 +473,32 @@ export default function StudentsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between p-4 border-t border-gray-200">
+              <div className="text-sm text-gray-600">
+                Showing page {page} of {totalPages} ({totalStudents} students)
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className={`px-3 py-1 rounded border ${
+                    page <= 1 ? "text-gray-400 border-gray-200" : "text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className={`px-3 py-1 rounded border ${
+                    page >= totalPages ? "text-gray-400 border-gray-200" : "text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         )}

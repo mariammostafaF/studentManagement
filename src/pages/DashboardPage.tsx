@@ -15,9 +15,9 @@ interface Student {
 
 interface DashboardStats {
   totalStudents: number;
-  totalCourses: number;
+  totalUniqueCourses: number;
   averageAge: number;
-  totalEnrolments: number;
+  enrollmentsThisYear: number;
 }
 
 interface Teacher {
@@ -33,9 +33,9 @@ export default function DashboardPage() {
   const { logout, token } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
-    totalCourses: 0,
+    totalUniqueCourses: 0,
     averageAge: 0,
-    totalEnrolments: 0,
+    enrollmentsThisYear: 0,
   });
   const [loading, setLoading] = useState(true);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -111,7 +111,7 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const response = await fetch(
-          `https://student-management-backend-production-2b4a.up.railway.app/api/students`,
+          `https://student-management-backend-production-2b4a.up.railway.app/api/stats`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -119,36 +119,13 @@ export default function DashboardPage() {
           }
         );
 
-        const data = await response.json();
-
-        if (response.ok && data.students) {
-          const students: Student[] = data.students;
-
-          // Calculate statistics
-          const totalStudents = students.length;
-          
-          // Get all unique courses
-          const allCourses = new Set<string>();
-          students.forEach((student) => {
-            student.courses?.forEach((course) => allCourses.add(course));
-          });
-          const totalCourses = allCourses.size;
-
-          // Calculate average age
-          const totalAge = students.reduce((sum, student) => sum + (student.age || 0), 0);
-          const averageAge = totalStudents > 0 ? Math.round((totalAge / totalStudents) * 10) / 10 : 0;
-
-          // Total enrolments (total number of course enrollments across all students)
-          const totalEnrolments = students.reduce(
-            (sum, student) => sum + (student.courses?.length || 0),
-            0
-          );
-
+        if (response.ok) {
+          const data = await response.json();
           setStats({
-            totalStudents,
-            totalCourses,
-            averageAge,
-            totalEnrolments,
+            totalStudents: data.totalStudents ?? 0,
+            totalUniqueCourses: data.totalUniqueCourses ?? 0,
+            averageAge: data.averageAge ?? 0,
+            enrollmentsThisYear: data.enrollmentsThisYear ?? 0,
           });
         }
       } catch (err) {
@@ -344,8 +321,8 @@ export default function DashboardPage() {
             color="text-blue-400"
           />
           <StatBox
-            title="Total Courses"
-            value={stats.totalCourses}
+            title="Unique Courses"
+            value={stats.totalUniqueCourses}
             icon={<i className="fa-regular fa-bookmark"></i>}
             color="text-pink-200"
           />
@@ -356,8 +333,8 @@ export default function DashboardPage() {
             color="text-orange-400"
           />
           <StatBox
-            title="Enrolments"
-            value={stats.totalEnrolments}
+            title="Enrollments This Year"
+            value={stats.enrollmentsThisYear}
             icon={<i className="fa-regular fa-user"></i>}
             color="text-orange-600"
           />

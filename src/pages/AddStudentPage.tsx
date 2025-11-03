@@ -21,6 +21,7 @@ export default function AddStudentPage() {
   const [courses, setCourses] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [teacherLoading, setTeacherLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(() => 
@@ -30,12 +31,55 @@ export default function AddStudentPage() {
   useEffect(() => {
     const handleHashChange = () => {
       setCurrentPage(window.location.hash.replace("#", "") || "dashboard");
+      // detect edit param on hash change
+      const hash = window.location.hash.replace("#", "");
+      const query = hash.split("?")[1] || "";
+      const params = new URLSearchParams(query);
+      const editId = params.get("edit");
+      setEditingId(editId);
     };
     // Check hash on mount
     handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  // Prefill when editing
+  useEffect(() => {
+    const prefillForEdit = async () => {
+      if (!token || !editingId) return;
+      setLoading(true);
+      setMessage("");
+      try {
+        const response = await fetch(
+          `https://student-management-backend-production-2b4a.up.railway.app/api/students/${editingId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const s = data.student || data;
+          setFirstName(s.firstName || "");
+          setLastName(s.lastName || "");
+          setEmail(s.email || "");
+          setAge(typeof s.age === "number" ? s.age : "");
+          setImage(s.image || "");
+          setCourses(Array.isArray(s.courses) ? s.courses.join(", ") : "");
+        } else {
+          const err = await response.json();
+          setMessage(`❌ ${err.error || "Failed to load student"}`);
+        }
+      } catch (e) {
+        setMessage("❌ Network error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    prefillForEdit();
+  }, [token, editingId]);
 
   useEffect(() => {
     const fetchTeacherInfo = async () => {
@@ -105,35 +149,45 @@ export default function AddStudentPage() {
     setMessage("");
 
     try {
-      const response = await fetch(
-        "https://student-management-backend-production-2b4a.up.railway.app/api/students",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            age: Number(age),
-            image,
-            courses: courses.split(",").map((c) => c.trim()),
-          }),
-        }
-      );
+      const isEdit = Boolean(editingId);
+      const url = isEdit
+        ? `https://student-management-backend-production-2b4a.up.railway.app/api/students/${editingId}`
+        : "https://student-management-backend-production-2b4a.up.railway.app/api/students";
+      const method = isEdit ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          age: Number(age),
+          image,
+          courses: courses.split(",").map((c) => c.trim()),
+        }),
+      });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage("✅ Student added successfully!");
-        setFirstName("");
-        setLastName("");
-        setEmail("");
-        setAge("");
-        setImage("");
-        setCourses("");
+        if (editingId) {
+          setMessage("✅ Student updated successfully!");
+          // Navigate back to students list for better UX
+          setTimeout(() => {
+            window.location.hash = "students";
+          }, 500);
+        } else {
+          setMessage("✅ Student added successfully!");
+          setFirstName("");
+          setLastName("");
+          setEmail("");
+          setAge("");
+          setImage("");
+          setCourses("");
+        }
       } else {
         setMessage(`❌ ${data.error || "Failed to add student"}`);
       }
@@ -243,7 +297,7 @@ export default function AddStudentPage() {
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">Add New Student</h2>
+          <h2 className="text-2xl font-semibold mb-4">{editingId ? "Edit Student" : "Add New Student"}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -307,13 +361,24 @@ export default function AddStudentPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-300"
-            >
-              {loading ? "Adding..." : "Add Student"}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-300"
+              >
+                {loading ? (editingId ? "Saving..." : "Adding...") : (editingId ? "Save Changes" : "Add Student")}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => { window.location.hash = "students"; }}
+                  className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
 
           {message && <p className="mt-4">{message}</p>}
