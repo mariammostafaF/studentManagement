@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import StudentsPage from "./pages/StudentsPage";
 import LoginPage from "./pages/LoginPage";
 import AddStudentPage from "./pages/AddStudentPage";
@@ -8,33 +8,25 @@ import { useAuth } from "./contexts/AuthContext";
 
 function App() {
   const { token } = useAuth();
-  const [page, setPage] = useState("dashboard");
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace("#", "");
-      if (hash.startsWith("student/")) {
-        setPage("student-profile");
-      } else {
-        setPage(hash || "dashboard");
-      }
-    };
-    window.addEventListener("hashchange", handleHashChange);
-    handleHashChange();
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
 
   if (!token) {
-    return <LoginPage />;
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   return (
-    <>
-      {page === "dashboard" && <DashboardPage />}
-      {page === "students" && <StudentsPage />}
-      {page === "add-student" && <AddStudentPage />}
-      {page === "student-profile" && <StudentProfilePage />}
-    </>
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/students" element={<StudentsPage />} />
+      <Route path="/add-student" element={<AddStudentPage />} />
+      <Route path="/student/:id" element={<StudentProfilePage />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
 

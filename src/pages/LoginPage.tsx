@@ -3,6 +3,8 @@ import { useAuth } from "../contexts/AuthContext";
 import bgImage from "../assets/login-bg.jpg";
 import logo from "../assets/logo.jpg"
 
+const BASE=import.meta.env.VITE_API_URL;
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +17,7 @@ export default function LoginPage() {
 
     try {
       const response = await fetch(
-        "https://student-management-backend-production-2b4a.up.railway.app/api/auth/login",
+        `${BASE}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
